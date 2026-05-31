@@ -40,14 +40,10 @@ public:
 
 class StripedHashSet {
 private:
-    // array of mutexes and buckets here
-    // example: std::vector<std::mutex> locks;
 
-    static const int NUM_STRIPES = 16; //change this to increase/decrease the number of stripes in the hash set
-    
-    std::mutex locks[NUM_STRIPES];
-    
-    std::vector<PageData> buckets[NUM_STRIPES];
+    static const int NUM_STRIPES = 16; // 16 lists
+    std::mutex locks[NUM_STRIPES];  // 16 locks, one per list
+    std::vector<PageData> buckets[NUM_STRIPES];  // 16 lists of PageData objects
 
 public:
     // function insert_and_check : Tries to add a new URL to the hash table. 

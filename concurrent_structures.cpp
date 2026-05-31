@@ -29,7 +29,7 @@ bool SafeQueue::pop(CrawlTask& task) {
     // while sleeping, the lock is released so other threads can push
     cv.wait(lock, [this]{
         return !q.empty() || done;
-    })
+    });
 
     // I woke up but WHY did I wake up?
     // if the queue is still empty, it means shutdown() was called → time to stop
@@ -68,3 +68,51 @@ void SafeQueue::shutdown() {
 
 } 
 
+
+
+bool StripedHashSet::insert_and_check(const std::string& url, const PageData& data) {
+
+    // step 1: figure out which list this url belongs to
+    // this gives me a number between 0 and 15
+    int stripe = std::hash<std::string>{}(url) % 16;
+
+    // step 2: lock that specific list
+    // only I can touch this list now
+    std::lock_guard<std::mutex> lock(locks[stripe]);
+
+    // step 3: go through every page already in this list
+    // and check if this url is already there
+    for (PageData& page : buckets[stripe]) {
+        if (page.url == url) {
+            // found it — already seen before
+            return false;
+        }
+    }
+
+    // step 4: url is not in the list → add it
+    buckets[stripe].push_back(data);
+
+    // tell the caller: this is a new url
+    return true;
+
+    // lock released automatically here
+}
+
+
+void StripedHashSet::increment_incoming(const std::string& url) {
+
+    // step 1: figure out which list this url belongs to
+    int stripe = std::hash<std::string>{}(url) % 16;
+
+    // step 2: lock that specific list
+    std::lock_guard<std::mutex> lock(locks[stripe]);
+
+    // step 3: go through every page in this list
+    // find the one with this url and add +1 to its incoming_links
+    for (PageData& page : buckets[stripe]) {
+        if (page.url == url) {
+            page.incoming_links++;
+            return;
+        }
+    }
+}
