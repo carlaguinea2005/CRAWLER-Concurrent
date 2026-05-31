@@ -41,9 +41,9 @@ public:
 class StripedHashSet {
 private:
 
-    static const int NUM_STRIPES = 16; // 16 lists
+    static const int NUM_STRIPES = 16; // nbr of lists
     std::mutex locks[NUM_STRIPES];  // 16 locks, one per list
-    std::vector<PageData> buckets[NUM_STRIPES];  // 16 lists of PageData objects
+    std::vector<PageData> buckets[NUM_STRIPES];  // creates 16 lists that can hold PageData objects
 
 public:
     // function insert_and_check : Tries to add a new URL to the hash table. 
@@ -56,6 +56,8 @@ public:
     // input: const std::string& url (the target URL)
     // output: void
     void increment_incoming(const std::string& url);
+
+    std::vector<PageData> get_all_pages(); // gives back all pages collected during crawling
 };
 
 #endif

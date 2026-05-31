@@ -116,3 +116,32 @@ void StripedHashSet::increment_incoming(const std::string& url) {
         }
     }
 }
+
+
+std::vector<PageData> StripedHashSet::get_all_pages() {
+
+    // I will collect everything here
+    // starts empty, will grow as we go through each list
+    std::vector<PageData> all_pages;
+
+    // go through each of my 16 lists, one by one
+    // i goes from 0 to 15
+    for (int i = 0; i < NUM_STRIPES; i++) {
+
+        // lock list number i
+        // so no thread adds something while I am reading it
+        std::lock_guard<std::mutex> lock(locks[i]);
+
+        // go through every page stored in list i
+        for (PageData& page : buckets[i]) {
+
+            // add this page to my big collection
+            all_pages.push_back(page);
+
+        } // lock released automatically here, then i moves to next list
+
+    }
+
+    // give back the complete collection to whoever called me
+    return all_pages;
+}
