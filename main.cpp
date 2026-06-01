@@ -88,7 +88,10 @@ int main(int argc, char* argv[]) {
     first_task.url = start_url;
     first_task.depth = 0;
     first_task.parent_url = "";
+    PageData seed_data = {start_url, 0, "", 0, 0}; // add seed to hash set so it's not visited twice
+    visited.insert_and_check(start_url, seed_data);
     queue.push(first_task);
+
 
     auto start_time = std::chrono::high_resolution_clock::now();
 
