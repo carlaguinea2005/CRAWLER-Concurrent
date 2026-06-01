@@ -31,7 +31,6 @@ bool SafeQueue::pop(CrawlTask& task) {
         return !q.empty() || done;
     });
 
-    // I woke up but WHY did I wake up?
     // if the queue is still empty, it means shutdown() was called → time to stop
     // so I return false to tell the while loop to stop
     if (q.empty()) {
@@ -144,4 +143,22 @@ std::vector<PageData> StripedHashSet::get_all_pages() {
 
     // give back the complete collection to whoever called me
     return all_pages;
+}
+
+
+void StripedHashSet::update_outgoing(const std::string& url, int count) {
+
+    // figure out which list this url belongs to
+    int stripe = std::hash<std::string>{}(url) % 16;
+
+    // lock that list
+    std::lock_guard<std::mutex> lock(locks[stripe]);
+
+    // find the page and save its outgoing count
+    for (PageData& page : buckets[stripe]) {
+        if (page.url == url) {
+            page.outgoing_links = count;
+            return;
+        }
+    }
 }

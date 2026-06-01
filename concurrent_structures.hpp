@@ -58,6 +58,8 @@ public:
     void increment_incoming(const std::string& url);
 
     std::vector<PageData> get_all_pages(); // gives back all pages collected during crawling
+
+    void update_outgoing(const std::string& url, int count);
 };
 
 #endif
