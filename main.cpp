@@ -2,7 +2,6 @@
 #include <string>
 #include <vector>
 
-#include "download_def.hpp"
 #include "downloader.hpp"
 #include "concurrent_structures.hpp"
 #include "parser_analyzer.hpp"
