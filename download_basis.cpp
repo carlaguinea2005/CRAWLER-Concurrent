@@ -6,6 +6,8 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#include <thread>
+
 
 // first: we have that libcurl downloads the data bit by bit, so we need to add them into an html 
 //string
@@ -98,4 +100,20 @@ std::string download_url(const std::string& url, Downloading_Stats& stats) {
 
     return html;
 }
+//just in case there are connexion errors, errors that dont come from the url, we try various times 
+std::string download_url_with_retry(const std::string& url,Downloading_Stats& stats,int max_retries, int retry_delay_ms) {
+    for (int attempt = 1; attempt <= max_retries; attempt++) {
+        std::cout << "attempt " << attempt << " for url: " << url << std::endl;
+        std::string html = download_url(url, stats);
 
+        if (!html.empty()) {
+            return html;
+        }
+        if (attempt < max_retries) {
+            //we do a pause before retrying, to avoid doing too many requests in a short time, which can cause more problems
+            std::this_thread::sleep_for(std::chrono::milliseconds(retry_delay_ms));
+        }
+    }
+    std::cerr << "unable to download url: " << url << std::endl;
+    return "";
+}
