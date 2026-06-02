@@ -28,33 +28,22 @@ struct PageData {
 
 class SafeQueue {
 private:
-    std::queue<CrawlTask> q;
-    std::mutex mtx;
-    std::condition_variable cv;
-
+    std::queue<CrawlTask> q;        // this is my actual to-do list of URLs
+    std::mutex mtx;                 // this is my lock, only one thread can touch q at a time
+    std::condition_variable cv;     // this lets threads sleep and wake up when something arrives
+    bool done = false;              // starts as false, becomes true when crawling is finished
 public:
-    // push funcion : adds a new URL task to the queue and wakes up a waiting thread
-    // input: const CrawlTask& task (the URL and its metadata to be processed)
-    // output: void
-    void push(const CrawlTask& task);
-
-    // function pop : takes a task from the queue safely. If the queue is empty, 
-    //              the thread waits until a new task arrives.
-    // input: CrawlTask& task (a reference to store the popped task)
-    // output: bool (returns true if successful, false if the queue is shutting down)
-    bool pop(CrawlTask& task);
+    void push(const CrawlTask& task); // adds a URL to my list
+    bool pop(CrawlTask& task);        // takes a URL from my list (returns false if we're done)
+    void shutdown();                  // tells all sleeping threads to wake up and stop
 };
 
 class StripedHashSet {
 private:
-    // array of mutexes and buckets here
-    // example: std::vector<std::mutex> locks;
 
-    static const int NUM_STRIPES = 16; //change this to increase/decrease the number of stripes in the hash set
-    
-    std::mutex locks[NUM_STRIPES];
-    
-    std::vector<PageData> buckets[NUM_STRIPES];
+    static const int NUM_STRIPES = 16; // nbr of lists
+    std::mutex locks[NUM_STRIPES];  // 16 locks, one per list
+    std::vector<PageData> buckets[NUM_STRIPES];  // creates 16 lists that can hold PageData objects
 
 public:
     // function insert_and_check : Tries to add a new URL to the hash table. 
@@ -67,6 +56,10 @@ public:
     // input: const std::string& url (the target URL)
     // output: void
     void increment_incoming(const std::string& url);
+
+    std::vector<PageData> get_all_pages(); // gives back all pages collected during crawling
+
+    void update_outgoing(const std::string& url, int count);
 };
 
 #endif
