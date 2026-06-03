@@ -37,6 +37,35 @@ static size_t adding_pieces(void* contents, size_t size, size_t nmemb, void* use
     return total_size; 
 }; 
 
+void what_status_message(long status_code) {
+    if (is_http_ok(status_code)) {
+        std::cout << "http status: it is a success" << std::endl;
+    }
+    else if (is_http_redirect(status_code)) {
+        std::cout << "HTTP status: redirect" << std::endl;
+    }
+    else if (is_http_client_error(status_code)) {
+        std::cout << "HTTP status: client error" << std::endl;
+        if (status_code == 400) {
+            std::cout << "bad request" << std::endl;
+        }
+        else if (status_code == 401) {
+            std::cout << " access not authorized " << std::endl;
+        }
+        else if (status_code == 403) {
+            std::cout << "forbidden page" << std::endl;
+        }
+        else if (status_code == 404) {
+            std::cout << "page not found" << std::endl;
+        }
+    }
+    else if (is_http_server_error(status_code)) {
+        std::cout << "http status: server error" << std::endl;
+    }
+    else {
+        std::cout << "http status: unknown response" << std::endl;
+    }
+}
 // in this function we download the url and store it, but in the header file we want to also take
 //into account the stats that come with each URL
 std::string download_url(const std::string& url){
@@ -91,7 +120,7 @@ std::string download_url(const std::string& url, Downloading_Stats& stats) {
 
     long status_code = 0;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
-
+    what_status_message(status_code); //type of error if we find one, helper function above
     curl_easy_cleanup(curl);
 
     if (!is_http_ok(status_code)) {
