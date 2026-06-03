@@ -13,7 +13,9 @@ private:
     double total_download_time;
     long total_bytes_downloaded;
     // mutex so multiple threads can update stats safely, since it can hve problem w lock
-    mutable std::mutex stats_mutex;             
+    mutable std::mutex stats_mutex; 
+    //avoids deadlock when printing stats
+    double average_download_time_unsafe() const;
 public:
     // Constructor: starts all counters at zero
     Downloading_Stats();
