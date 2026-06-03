@@ -1,6 +1,6 @@
 #include "status_http.hpp"
 
-bool is_http_success(long status_code) {
+bool is_http_ok(long status_code) {
     return status_code >= 200 && status_code < 300;
 }
 
