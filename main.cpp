@@ -19,7 +19,7 @@ std::string start_url = "https://en.wikipedia.org/wiki/Crawling";
 
 // --------------------------------------------------------------------------------------------------------------
 
-void worker_thread(SafeQueue& queue, StripedHashSet& visited, DownloadConfig& config, const std::string target_domain) {
+void worker_thread(SafeQueue& queue, StripedHashSet& visited, DownloadConfig& config, const std::string target_domain, Downloading_Stats& stats) {
     CrawlTask task;
     
     while (queue.pop(task)) {
@@ -29,7 +29,7 @@ void worker_thread(SafeQueue& queue, StripedHashSet& visited, DownloadConfig& co
             break;
         }
 
-        std::string html = Downloader::download_url(task.url, config);
+        std::string html = Downloader::download_url_with_retry(task.url, config, stats);
         if (html.empty()) continue; 
         
         std::vector<std::string> raw_links = Parser::extract_links(html);
@@ -61,6 +61,7 @@ int main() {
     SafeQueue queue;
     StripedHashSet visited;
     DownloadConfig config;
+    Downloading_Stats stats;
     
     std::string url = start_url;
     std::string target_domain = Parser::extract_base_domain(start_url);
@@ -75,7 +76,7 @@ int main() {
     std::cout << "Starting multithreaded crawler on " << target_domain << " with " << num_threads << " threads :\n";
     
     for (int i = 0; i < num_threads; ++i) {
-        threads.emplace_back(worker_thread, std::ref(queue), std::ref(visited), std::ref(config), target_domain);
+        threads.emplace_back(worker_thread, std::ref(queue), std::ref(visited), std::ref(config), target_domain, std::ref(stats));
     }
     
     for (auto& t : threads) {
@@ -85,6 +86,6 @@ int main() {
     std::cout << "\nCrawling finished.\n";
     std::vector<PageData> final_data = visited.get_all_pages();
     Benchmarker::generate_csv(final_data, "crawler_results.csv");
-    
+    stats.print_stats();
     return 0;
 }

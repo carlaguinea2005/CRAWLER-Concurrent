@@ -8,6 +8,29 @@
 
 // dowload_def
 
+static bool is_valid_url(const std::string& url) {
+    if (url.empty()) {
+        return false;
+    }
+
+    bool starts_with_http = url.rfind("http://", 0) == 0;
+    bool starts_with_https = url.rfind("https://", 0) == 0;
+
+    if (!starts_with_http && !starts_with_https) {
+        return false;
+    }
+
+    if (url.find(' ') != std::string::npos) {
+        return false;
+    }
+
+    if (url.find('.') == std::string::npos) {
+        return false;
+    }
+
+    return true;
+}
+
 DownloadConfig::DownloadConfig() {
     
     timeout_seconds = 10; //max total time
@@ -54,11 +77,15 @@ double Downloading_Stats::average_download_time() const {
 //we want to do the statistics at the end of the main function, so we want to print them in a nice way
 void Downloading_Stats::print_stats() const {
     std::lock_guard<std::mutex> lock(stats_mutex);
+    double average = 0.0;
+    if (total_downloads > 0) {
+        average = total_download_time / total_downloads;
+    }
     std::cout << "Download statistics:" << std::endl;
     std::cout << "Total download attempts: " << total_downloads << std::endl;
     std::cout << "Successful downloads: " << successful_downloads << std::endl;
     std::cout << "Failed downloads: " << failed_downloads << std::endl;
-    std::cout << "Average download time: " << average_download_time() << " seconds" << std::endl;
+    std::cout << "Average download time: " << average << " seconds" << std::endl;
     std::cout << "Total bytes downloaded: " << total_bytes_downloaded << std::endl;
 }
 
@@ -79,6 +106,11 @@ std::string Downloader::download_url(const std::string& url, const DownloadConfi
 };
 
 std::string Downloader::download_url(const std::string& url, const DownloadConfig& config, Downloading_Stats& stats) {
+    if (!is_valid_url(url)) {
+        stats.add_failure(0.0);
+        std::cerr << "Invalid URL rejected before download: " << url << std::endl;
+        return "";
+    }
     stats.add_download_attempt();
     std::string html;
 
