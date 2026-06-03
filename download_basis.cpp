@@ -26,7 +26,7 @@ bool is_valid_url(const std::string& url) {
         return false;
     }
     return true;
-};
+}
 // first: we have that libcurl downloads the data bit by bit, so we need to add them into an html 
 //string
 
@@ -35,7 +35,7 @@ static size_t adding_pieces(void* contents, size_t size, size_t nmemb, void* use
     std::string* html = (std::string*) userp; 
     html->append((char*)contents, total_size); 
     return total_size; 
-}; 
+}
 
 void what_status_message(long status_code) {
     if (is_http_ok(status_code)) {
@@ -75,6 +75,12 @@ std::string download_url(const std::string& url){
 }
 // we want ot actually do the main download 
 std::string download_url(const std::string& url, Downloading_Stats& stats) {
+    //validity of teh url
+    if (!is_valid_url(url)) {
+        stats.add_failure(0.0);
+        std::cerr << "invalid url (rejected before the download): " << url << std::endl;
+        return "";
+    }
     stats.add_download_attempt();
 
     std::string html;
