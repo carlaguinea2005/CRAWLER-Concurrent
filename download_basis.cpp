@@ -8,7 +8,25 @@
 #include <string>
 #include <thread>
 
-
+//before calling url, we see if it's worth trying 
+bool is_valid_url(const std::string& url) {
+    if (url.empty()) {return false;
+    }
+    bool starts_with_http =
+        url.rfind("http://", 0) == 0;
+    bool starts_with_https =
+        url.rfind("https://", 0) == 0;
+    if (!starts_with_http && !starts_with_https) {
+        return false;
+    }
+    if (url.find(' ') != std::string::npos) {
+        return false;
+    }
+    if (url.find('.') == std::string::npos) {
+        return false;
+    }
+    return true;
+};
 // first: we have that libcurl downloads the data bit by bit, so we need to add them into an html 
 //string
 
