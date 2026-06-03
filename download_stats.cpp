@@ -28,12 +28,19 @@ void Downloading_Stats::add_failure(double download_time) {
     total_download_time += download_time;
 }
 
-double Downloading_Stats::average_download_time() const {
+double Downloading_Stats::average_download_time_unsafe() const {
     if (total_downloads == 0) {
         return 0.0;
     }
     return total_download_time / total_downloads;
 }
+
+// i implement the public version that acquires the lock, then delegates to the unsafe helper
+double Downloading_Stats::average_download_time() const {
+    std::lock_guard<std::mutex> lock(stats_mutex);
+    return average_download_time_unsafe();
+}
+ 
 //we want to do the statistics at the end of the main function, so we want to print them in a nice way
 
 void Downloading_Stats::print_stats() const {
@@ -43,7 +50,7 @@ void Downloading_Stats::print_stats() const {
     std::cout << "Successful downloads: " << successful_downloads << std::endl;
     std::cout << "Failed downloads: " << failed_downloads << std::endl;
     std::cout << "Average download time: "
-              << average_download_time()
+              << average_download_time_unsafe()
               << " seconds" << std::endl;
     std::cout << "Total bytes downloaded: "
               << total_bytes_downloaded
