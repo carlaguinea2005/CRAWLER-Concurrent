@@ -11,16 +11,19 @@ Downloading_Stats::Downloading_Stats() {
 }
 
 void Downloading_Stats::add_download_attempt() {
+    std::lock_guard<std::mutex> lock(stats_mutex);
     total_downloads++;
 }
 
 void Downloading_Stats::add_success(double download_time, long html_size) {
+    std::lock_guard<std::mutex> lock(stats_mutex);
     successful_downloads++;
     total_download_time += download_time;
     total_bytes_downloaded += html_size;
 }
 
 void Downloading_Stats::add_failure(double download_time) {
+    std::lock_guard<std::mutex> lock(stats_mutex);
     failed_downloads++;
     total_download_time += download_time;
 }
