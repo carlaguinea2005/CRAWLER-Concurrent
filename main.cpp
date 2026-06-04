@@ -59,14 +59,13 @@ void worker_thread(SafeQueue& queue, StripedHashSet& visited, DownloadConfig& co
             // we use the generic domain filter instead of just wikipedia
             if (Parser::is_internal_link(clean_url, target_domain)) {
                 outgoing_count++;
-                visited.increment_incoming(clean_url);
-                
-                PageData new_page_data = {clean_url, task.depth + 1, task.url, 1, 0};
+                PageData new_page_data = {clean_url, task.depth + 1, task.url, 0, 0};
                 
                 if (visited.insert_and_check(clean_url, new_page_data)) {
                     CrawlTask new_task = {clean_url, task.depth + 1, task.url};
                     queue.push(new_task);
                 }
+                visited.increment_incoming(clean_url);
             }
         }
 
