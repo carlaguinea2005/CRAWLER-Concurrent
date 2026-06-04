@@ -23,8 +23,8 @@ std::string start_url = "https://en.wikipedia.org/wiki/Crawling";
 // --------------------------------------------------------------------------------------------------------------
 
 // content-seen test structures from mercator paper
-std::mutex content_mtx;
-std::unordered_set<size_t> seen_content_hashes;
+// upgraded to use readers-writer lock: multiple threads can check simultaneously
+ConcurrentFingerprintSet fingerprints;
 
 void worker_thread(SafeQueue& queue, StripedHashSet& visited, DownloadConfig& config, const std::string target_domain, Downloading_Stats& stats) {
     CrawlTask task;
@@ -41,13 +41,9 @@ void worker_thread(SafeQueue& queue, StripedHashSet& visited, DownloadConfig& co
 
         // content-seen test
         size_t content_hash = std::hash<std::string>{}(html);
-        {
-            std::lock_guard<std::mutex> lock(content_mtx);
-            // if we have seen this exact HTML before skip extraction
-            if (!seen_content_hashes.insert(content_hash).second) {
-                std::cout << "Skipping duplicate content: " << task.url << "\n";
-                continue; 
-            }
+        if (!fingerprints.insert_if_new(content_hash)) {
+            std::cout << "Skipping duplicate content: " << task.url << "\n";
+            continue;
         }
         
         std::vector<std::string> raw_links = Parser::extract_links(html);

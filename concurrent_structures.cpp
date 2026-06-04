@@ -86,3 +86,29 @@ void StripedHashSet::update_outgoing(const std::string& url, int count) {
         }
     }
 }
+
+// Mercator paper section 3.5: content-seen test with readers-writer lock
+// threads checking for duplicate content dont need to block each other
+bool ConcurrentFingerprintSet::insert_if_new(size_t hash) {
+
+    // read lock first: multiple threads can check simultaneously
+    {
+        std::shared_lock<std::shared_mutex> read_lock(rw_mutex);
+        if (hashes.count(hash) > 0) {
+            return false; // already seen, skip this page
+        }
+    }
+
+    // not found: need to insert, so upgrade to write lock
+    {
+        std::unique_lock<std::shared_mutex> write_lock(rw_mutex);
+
+        // check again: another thread might have inserted between our two locks
+        if (hashes.count(hash) > 0) {
+            return false;
+        }
+
+        hashes.insert(hash);
+        return true; // new content, process it
+    }
+}

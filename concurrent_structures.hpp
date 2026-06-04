@@ -6,6 +6,9 @@
 #include <vector>
 #include <mutex>
 #include <condition_variable>
+#include <shared_mutex>
+#include <unordered_set>
+
 
 // YASMINE
 // manages thread-safe data storage and BFS task queuing for the crawler
@@ -61,5 +64,20 @@ public:
 
     void update_outgoing(const std::string& url, int count);
 };
+
+// content-seen test from the Mercator paper (section 3.5)
+// uses a readers-writer lock instead of a plain mutex
+// multiple threads can check simultaneously, only blocks on writes
+class ConcurrentFingerprintSet {
+private:
+    std::shared_mutex rw_mutex; // allows concurrent reads, exclusive writes
+    std::unordered_set<size_t> hashes; // stores fingerprints of seen HTML content
+
+public:
+    // returns true if this is new content, false if already seen
+    bool insert_if_new(size_t hash);
+};
+
+
 
 #endif
