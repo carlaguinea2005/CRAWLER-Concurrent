@@ -26,7 +26,7 @@ std::string start_url = "https://en.wikipedia.org/wiki/Crawling";
 // upgraded to use readers-writer lock: multiple threads can check simultaneously
 ConcurrentFingerprintSet fingerprints;
 
-void worker_thread(SafeQueue& queue, StripedHashSet& visited, DownloadConfig& config, const std::string target_domain, Downloading_Stats& stats) {
+void worker_thread(SafeQueue& queue, RefinableHashSet& visited, DownloadConfig& config, const std::string target_domain, Downloading_Stats& stats) {
     CrawlTask task;
     
     while (queue.pop(task)) {
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     }
 
     SafeQueue queue;
-    StripedHashSet visited;
+    RefinableHashSet visited;
     DownloadConfig config;
     Downloading_Stats stats;
     

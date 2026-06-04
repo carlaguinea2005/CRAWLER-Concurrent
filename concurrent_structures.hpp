@@ -8,6 +8,7 @@
 #include <condition_variable>
 #include <shared_mutex>
 #include <unordered_set>
+#include <atomic>  
 
 
 // YASMINE
@@ -64,6 +65,37 @@ public:
 
     void update_outgoing(const std::string& url, int count);
 };
+
+
+// upgrade of StripedHashSet: resizes dynamically when buckets get too full
+// based on Herlihy chapter 13 (RefinableHashSet)
+class RefinableHashSet {
+private:
+    static const int LOAD_FACTOR = 4; // resize when entries/buckets > 4
+
+    int num_buckets;
+    std::atomic<int> size;
+
+    std::vector<std::vector<PageData>> buckets;
+    std::vector<std::mutex> locks;
+    std::mutex resize_mutex; // separate lock just for resizing
+
+    int get_stripe(const std::string& url) const {
+        return std::hash<std::string>{}(url) % num_buckets;
+    }
+
+    void resize();
+
+public:
+    RefinableHashSet();
+
+    bool insert_and_check(const std::string& url, const PageData& data);
+    void increment_incoming(const std::string& url);
+    void update_outgoing(const std::string& url, int count);
+    std::vector<PageData> get_all_pages();
+};
+
+
 
 // content-seen test from the Mercator paper (section 3.5)
 // uses a readers-writer lock instead of a plain mutex
