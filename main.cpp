@@ -3,6 +3,9 @@
 #include <vector>
 #include <thread>
 #include <atomic>
+#include <unordered_set>
+#include <functional>
+#include <mutex>
 
 #include "downloader.hpp"
 #include "concurrent_structures.hpp"
@@ -11,13 +14,17 @@
 std::atomic<int> pages_crawled(0);
 
 //--------------------------------------------------------------------------------------------------------------
-// choose max pages to crawl, number of threads, and starting URL here
+// default max pages to crawl, number of threads, and starting URL here
 
-const int MAX_PAGES = 50; 
-int threads = 4;
+int MAX_PAGES = 50; 
+int num_threads = 4;
 std::string start_url = "https://en.wikipedia.org/wiki/Crawling";
 
 // --------------------------------------------------------------------------------------------------------------
+
+// content-seen test structures from mercator paper
+std::mutex content_mtx;
+std::unordered_set<size_t> seen_content_hashes;
 
 void worker_thread(SafeQueue& queue, StripedHashSet& visited, DownloadConfig& config, const std::string target_domain, Downloading_Stats& stats) {
     CrawlTask task;
@@ -31,6 +38,17 @@ void worker_thread(SafeQueue& queue, StripedHashSet& visited, DownloadConfig& co
 
         std::string html = Downloader::download_url_with_retry(task.url, config, stats);
         if (html.empty()) continue; 
+
+        // content-seen test
+        size_t content_hash = std::hash<std::string>{}(html);
+        {
+            std::lock_guard<std::mutex> lock(content_mtx);
+            // if we have seen this exact HTML before skip extraction
+            if (!seen_content_hashes.insert(content_hash).second) {
+                std::cout << "Skipping duplicate content: " << task.url << "\n";
+                continue; 
+            }
+        }
         
         std::vector<std::string> raw_links = Parser::extract_links(html);
         int outgoing_count = 0;
@@ -54,10 +72,23 @@ void worker_thread(SafeQueue& queue, StripedHashSet& visited, DownloadConfig& co
 
         visited.update_outgoing(task.url, outgoing_count);
         std::cout << "Crawled [" << (a + 1) << "/" << MAX_PAGES << "] : " << task.url << "\n";
+
+        //std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+
+    if (argc > 1) {
+        MAX_PAGES = std::stoi(argv[1]);
+    }
+    if (argc > 2) {
+        num_threads = std::stoi(argv[2]);
+    }
+    if (argc > 3) {
+        start_url = argv[3];
+    }
+
     SafeQueue queue;
     StripedHashSet visited;
     DownloadConfig config;
@@ -70,22 +101,45 @@ int main() {
     visited.insert_and_check(url, root_data);
     queue.push({url, 0, "NONE"});
     
-    int num_threads = threads;
     std::vector<std::thread> threads;
     
-    std::cout << "Starting multithreaded crawler on " << target_domain << " with " << num_threads << " threads :\n";
+    std::cout << "Starting multithreaded crawler on " << target_domain << " with " << num_threads << " threads.\n";
+
+    auto start_time = std::chrono::high_resolution_clock::now();
     
     for (int i = 0; i < num_threads; ++i) {
-        threads.emplace_back(worker_thread, std::ref(queue), std::ref(visited), std::ref(config), target_domain, std::ref(stats));
+        threads.emplace_back(worker_thread,
+                             std::ref(queue),
+                             std::ref(visited),
+                             std::ref(config),
+                             target_domain,
+                             std::ref(stats));
     }
     
     for (auto& t : threads) {
-        if (t.joinable()) t.join();
+        if (t.joinable()) {
+            t.join();
+        }
     }
+
+    auto end_time = std::chrono::high_resolution_clock::now();
+
+    double total_seconds =
+        std::chrono::duration<double>(end_time - start_time).count();
     
     std::cout << "\nCrawling finished.\n";
+
     std::vector<PageData> final_data = visited.get_all_pages();
+
     Benchmarker::generate_csv(final_data, "crawler_results.csv");
+
+    std::cout << "Total pages found: " << final_data.size() << std::endl;
+    std::cout << "Total time: " << total_seconds << " seconds" << std::endl;
+    std::cout << "Pages per second: "
+              << final_data.size() / total_seconds
+              << std::endl;
+
     stats.print_stats();
+
     return 0;
 }
