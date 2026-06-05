@@ -21,7 +21,6 @@ std::string exec(const char* cmd) {
     if (!pipe) {
         throw std::runtime_error("popen() failed! Could not execute command.");
     }
-
     
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
         result += buffer.data();
@@ -40,6 +39,17 @@ double extract_metric(const std::string& output, const std::string& keyword) {
         }
     }
     return 0.0;
+}
+
+// generates and runs a Python script to plot the CSV data
+void generate_graph(const std::string& csv_filename) {
+
+    std::cout << "Generating graph...\n";
+    int result = system("python3 plot.py");
+    
+    if (result != 0) {
+        std::cerr << "Failed to generate graph. Do you have matplotlib installed? (pip3 install matplotlib)\n";
+    }
 }
 
 int main() {
@@ -107,6 +117,8 @@ int main() {
     csv_file.close();
     std::cout << std::string(65, '-') << "\n";
     std::cout << "Data saved to " << output_csv << "\n";
+
+    generate_graph(output_csv);
 
     return 0;
 }
