@@ -14,7 +14,10 @@
 std::atomic<int> pages_crawled(0);
 
 //--------------------------------------------------------------------------------------------------------------
-// default max pages to crawl, number of threads, and starting URL here
+// default settings max pages to crawl, number of threads, and starting URL here
+// the settings can be changes by passing command line arguments:
+// ./crawler [max_pages] [num_threads] [start_url]
+// this is how we run the tests with different number of threads in the benchmarking.cpp file
 
 int MAX_PAGES = 50; 
 int num_threads = 4;

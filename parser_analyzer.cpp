@@ -131,6 +131,11 @@ std::string Parser::normalize_url(const std::string& base_url, const std::string
 }
 
 bool Parser::is_internal_link(const std::string& url, const std::string& target_domain) {
+    // mercator optimization: filter out common non-content links early to save time on domain checks
+    if (url.find("/wiki/Special:") != std::string::npos || url.find("/wiki/Category:") != std::string::npos) {
+        return false;
+    }
+    
     return url.find(target_domain) == 0;
 }
 
@@ -151,8 +156,4 @@ void Benchmarker::generate_csv(const std::vector<PageData>& all_data, const std:
     }
     file.close();
     std::cout << "Successfully wrote " << all_data.size() << " pages to " << filename << "\n";
-}
-
-void Benchmarker::run_benchmark(int num_threads) {
-    std::cout << "Starting benchmark with " << num_threads << " threads :\n";
 }

@@ -22,7 +22,7 @@ public:
 class Benchmarker {
 public:
     static void generate_csv(const std::vector<PageData>& all_data, const std::string& filename);
-    static void run_benchmark(int num_threads);
+    // run_benchmark removed: i implemented benchmarking.cpp file to match the implementation from the main 
 };
 
 #endif
