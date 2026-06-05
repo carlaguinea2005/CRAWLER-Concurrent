@@ -23,10 +23,10 @@ std::string start_url = "https://en.wikipedia.org/wiki/Crawling";
 // --------------------------------------------------------------------------------------------------------------
 
 // content-seen test structures from mercator paper
-std::mutex content_mtx;
-std::unordered_set<size_t> seen_content_hashes;
+// upgraded to use readers-writer lock: multiple threads can check simultaneously
+ConcurrentFingerprintSet fingerprints;
 
-void worker_thread(SafeQueue& queue, StripedHashSet& visited, DownloadConfig& config, const std::string target_domain, Downloading_Stats& stats) {
+void worker_thread(SafeQueue& queue, RefinableHashSet& visited, DownloadConfig& config, const std::string target_domain, Downloading_Stats& stats) {
     CrawlTask task;
     
     while (queue.pop(task)) {
@@ -41,13 +41,9 @@ void worker_thread(SafeQueue& queue, StripedHashSet& visited, DownloadConfig& co
 
         // content-seen test
         size_t content_hash = std::hash<std::string>{}(html);
-        {
-            std::lock_guard<std::mutex> lock(content_mtx);
-            // if we have seen this exact HTML before skip extraction
-            if (!seen_content_hashes.insert(content_hash).second) {
-                std::cout << "Skipping duplicate content: " << task.url << "\n";
-                continue; 
-            }
+        if (!fingerprints.insert_if_new(content_hash)) {
+            std::cout << "Skipping duplicate content: " << task.url << "\n";
+            continue;
         }
         
         std::vector<std::string> raw_links = Parser::extract_links(html);
@@ -59,14 +55,13 @@ void worker_thread(SafeQueue& queue, StripedHashSet& visited, DownloadConfig& co
             // we use the generic domain filter instead of just wikipedia
             if (Parser::is_internal_link(clean_url, target_domain)) {
                 outgoing_count++;
-                visited.increment_incoming(clean_url);
-                
-                PageData new_page_data = {clean_url, task.depth + 1, task.url, 1, 0};
+                PageData new_page_data = {clean_url, task.depth + 1, task.url, 0, 0};
                 
                 if (visited.insert_and_check(clean_url, new_page_data)) {
                     CrawlTask new_task = {clean_url, task.depth + 1, task.url};
                     queue.push(new_task);
                 }
+                visited.increment_incoming(clean_url);
             }
         }
 
@@ -90,7 +85,7 @@ int main(int argc, char* argv[]) {
     }
 
     SafeQueue queue;
-    StripedHashSet visited;
+    RefinableHashSet visited;
     DownloadConfig config;
     Downloading_Stats stats;
     
