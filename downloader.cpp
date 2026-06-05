@@ -81,7 +81,9 @@ void Downloading_Stats::print_stats() const {
     if (total_downloads > 0) {
         average = total_download_time / total_downloads;
     }
-    std::cout << "Download statistics:" << std::endl;
+    std::cout << "\n";
+    std::cout << "--------------------Download statistics--------------------" << std::endl;
+    std::cout << "\n";
     std::cout << "Total download attempts: " << total_downloads << std::endl;
     std::cout << "Successful downloads: " << successful_downloads << std::endl;
     std::cout << "Failed downloads: " << failed_downloads << std::endl;

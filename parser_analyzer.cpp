@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <map>
 
 // ELISA
 
@@ -156,4 +157,38 @@ void Benchmarker::generate_csv(const std::vector<PageData>& all_data, const std:
     }
     file.close();
     std::cout << "Successfully wrote " << all_data.size() << " pages to " << filename << "\n";
+}
+
+void Benchmarker::bfs_path(const std::vector<PageData>& all_data) {
+    if (all_data.empty()) return;
+
+    std::cout << "\n------------------------- BFS Shortest Path -------------------------\n";
+    
+    // map to find the parent of any URL
+    std::map<std::string, std::string> parent_map;
+    for (const auto& page : all_data) {
+        parent_map[page.url] = page.parent;
+    }
+
+    // we pick the last page the crawler discovered to trace backward
+    std::string current_url = all_data.back().url;
+    
+    std::cout << "path from a discovered page back to the seed URL:\n";
+    std::cout << "\n";
+
+    int distance = 0;
+    // we search backwards until we hit the root URL whose parent is "NONE"
+    while (current_url != "NONE" && !current_url.empty()) {
+        std::cout << "  <- " << current_url << "\n";
+        
+        if (parent_map.find(current_url) != parent_map.end()) {
+            current_url = parent_map[current_url];
+            distance++;
+        } else {
+            break;
+        }
+    }
+    
+    std::cout << "\nThis path of " << (distance - 1) << " clicks is the shortest path.\n";
+    std::cout << "\n";
 }

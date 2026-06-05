@@ -131,6 +131,8 @@ int main(int argc, char* argv[]) {
 
     Benchmarker::generate_csv(final_data, "crawler_results.csv");
 
+    Benchmarker::bfs_path(final_data);
+
     std::cout << "Total pages found: " << final_data.size() << std::endl;
     std::cout << "Total time: " << total_seconds << " seconds" << std::endl;
     std::cout << "Pages per second: "
