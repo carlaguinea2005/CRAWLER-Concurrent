@@ -7,7 +7,19 @@
 // CARLA
 // handles all HTTP requests, timeouts, and error handling
 
-//download def
+// -----------------------------------------------------------------------
+// status_http
+// -----------------------------------------------------------------------
+
+bool is_http_ok(long status_code);
+bool is_http_redirect(long status_code);
+bool is_http_client_error(long status_code);
+bool is_http_server_error(long status_code);
+void what_status_message(long status_code);
+
+// -----------------------------------------------------------------------
+// download_def : we define the parameters we will follow before downloading anything
+// -----------------------------------------------------------------------
 
 struct DownloadConfig {
     long timeout_seconds;
@@ -18,8 +30,9 @@ struct DownloadConfig {
     DownloadConfig();
 };
 
-
-//dowload stats 
+// -----------------------------------------------------------------------
+// download_stats : we want to measure the stats when downloading: what goes wrong, how many files download, how many don't
+// -----------------------------------------------------------------------
 
 class Downloading_Stats {
 private:
@@ -30,8 +43,9 @@ private:
     double total_download_time;
     long total_bytes_downloaded;
     // mutex so multiple threads can update stats safely, since it can hve problem w lock
-    mutable std::mutex stats_mutex;             
-
+    mutable std::mutex stats_mutex;
+    //avoids deadlock when printing stats
+    double average_download_time_unsafe() const;
 public:
     // Constructor: starts all counters at zero
     Downloading_Stats();
@@ -49,17 +63,18 @@ public:
     double get_total_download_time() const;
 };
 
-
-//download basis
+// -----------------------------------------------------------------------
+// download_basis
+// -----------------------------------------------------------------------
 
 class Downloader {
 public:
     static std::string download_url(const std::string& url, const DownloadConfig& config);
     static std::string download_url(const std::string& url, const DownloadConfig& config, Downloading_Stats& stats);
-    static std::string download_url_with_retry(const std::string& url, const DownloadConfig& config, Downloading_Stats& stats, int max_retries = 3, int retry_delay_ms = 500);};
+    //optimization part: function that measures if it's worth trying the download: with most common cases of mistakes in names
+    static std::string download_url_with_retry(const std::string& url, const DownloadConfig& config, Downloading_Stats& stats, int max_retries = 3, int retry_delay_ms = 500);
+};
 
 #endif
 
-
-// g++ main.cpp downloader.cpp download_def.cpp -o crawler -lcurl -pthread
-// remember to link with -lcurl and -pthread when compiling, since we are using libcurl and threads.
+// g++ main.cpp downloader.cpp concurrent_structures.cpp parser_analyzer.cpp -o crawler -lcurl -pthread
