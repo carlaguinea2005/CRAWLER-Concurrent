@@ -46,6 +46,7 @@ public:
     //no matter the result before, how much time did it take
     double average_download_time() const;
     void print_stats() const;
+    double get_total_download_time() const;
 };
 
 

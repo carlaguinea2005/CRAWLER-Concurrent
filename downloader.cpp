@@ -74,6 +74,11 @@ double Downloading_Stats::average_download_time() const {
     return total_download_time / total_downloads;
 }
 
+double Downloading_Stats::get_total_download_time() const {
+    std::lock_guard<std::mutex> lock(stats_mutex);
+    return total_download_time;
+}
+
 //we want to do the statistics at the end of the main function, so we want to print them in a nice way
 void Downloading_Stats::print_stats() const {
     std::lock_guard<std::mutex> lock(stats_mutex);
