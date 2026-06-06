@@ -106,23 +106,14 @@ double Downloading_Stats::average_download_time_unsafe() const {
     return total_download_time / total_downloads;
 }
 
-<<<<<<< HEAD
-double Downloading_Stats::average_download_time() const {
-    std::lock_guard<std::mutex> lock(stats_mutex);
-    return average_download_time_unsafe();
-=======
 double Downloading_Stats::get_total_download_time() const {
     std::lock_guard<std::mutex> lock(stats_mutex);
     return total_download_time;
->>>>>>> d33b000214b820f5f621a974478a255c01586a08
 }
 
 //we want to do the statistics at the end of the main function, so we want to print them in a nice way
 void Downloading_Stats::print_stats() const {
     std::lock_guard<std::mutex> lock(stats_mutex);
-<<<<<<< HEAD
-    std::cout << "Download statistics:" << std::endl;
-=======
     double average = 0.0;
     if (total_downloads > 0) {
         average = total_download_time / total_downloads;
@@ -130,7 +121,6 @@ void Downloading_Stats::print_stats() const {
     std::cout << "\n";
     std::cout << "--------------------Download statistics--------------------" << std::endl;
     std::cout << "\n";
->>>>>>> d33b000214b820f5f621a974478a255c01586a08
     std::cout << "Total download attempts: " << total_downloads << std::endl;
     std::cout << "Successful downloads: " << successful_downloads << std::endl;
     std::cout << "Failed downloads: " << failed_downloads << std::endl;
